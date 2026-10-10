@@ -1,48 +1,114 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './Dashboard.css';
 
-const MOCK_PRODUCTS = [
-  { id: 1, name: 'Premium Basmati Rice 25kg', category: 'Grains', stock: 120, price: 45.00 },
-  { id: 2, name: 'Wheat Flour 10kg', category: 'Flour', stock: 45, price: 12.50 },
-  { id: 3, name: 'Refined Sugar 50kg', category: 'Sugar', stock: 8, price: 38.00 }
-];
+const MOCK_PRODUCTS = [];
 
 export default function AdminDashboard({ onLogout }) {
   const [activeTab, setActiveTab] = useState('dashboard');
 
   // Dynamic State
-  const [cities, setCities] = useState(['Mumbai', 'Pune', 'Delhi']);
-  const [shops, setShops] = useState([
-    { id: 1, name: 'Patel Supermart', city: 'Mumbai', owner: 'R. Patel', contact: '9876543210' },
-    { id: 2, name: 'Sharma Kirana Store', city: 'Pune', owner: 'A. Sharma', contact: '9876543212' },
-    { id: 3, name: 'Gupta General Store', city: 'Delhi', owner: 'M. Gupta', contact: '9876543214' }
-  ]);
+  const [cities, setCities] = useState([]);
+  const [shops, setShops] = useState([]);
+
+  // Fetch initial data on load
+  useEffect(() => {
+    fetch('http://localhost:8080/api/cities')
+      .then(res => res.json())
+      .then(data => setCities(data.map(c => c.name)))
+      .catch(err => console.error("Error fetching cities:", err));
+
+    fetch('http://localhost:8080/api/shops')
+      .then(res => res.json())
+      .then(data => {
+        setShops(data.map(s => ({
+          id: s.id,
+          name: s.name,
+          city: s.city.name,
+          owner: s.owner || s.address, // Fallback to address if owner is null (legacy)
+          contact: s.contact || 'N/A'
+        })));
+      })
+      .catch(err => console.error("Error fetching shops:", err));
+  }, []);
 
   // View State for Clients tab
   const [selectedCityView, setSelectedCityView] = useState(null); // null = show cities, string = show shops in that city
   const [showAddCity, setShowAddCity] = useState(false);
   const [showAddShop, setShowAddShop] = useState(false);
+  const [selectedShopDetails, setSelectedShopDetails] = useState(null);
 
   // Form State
   const [newCityName, setNewCityName] = useState('');
   const [newShop, setNewShop] = useState({ name: '', city: '', owner: '', contact: '' });
   const [citySearchTerm, setCitySearchTerm] = useState('');
 
-  const handleAddCity = (e) => {
+  const handleAddCity = async (e) => {
     e.preventDefault();
-    if (newCityName.trim() && !cities.includes(newCityName.trim())) {
-      setCities([...cities, newCityName.trim()]);
-      setNewCityName('');
-      setShowAddCity(false);
+    const trimmedCity = newCityName.trim();
+    if (trimmedCity && !cities.includes(trimmedCity)) {
+      try {
+        const response = await fetch('http://localhost:8080/api/cities', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: trimmedCity })
+        });
+
+        if (response.ok) {
+          setCities([...cities, trimmedCity]);
+          setNewCityName('');
+          setShowAddCity(false);
+        } else {
+          console.error("Failed to save city");
+        }
+      } catch (err) {
+        console.error("Error saving city:", err);
+      }
     }
   };
 
-  const handleAddShop = (e) => {
+  const handleAddShop = async (e) => {
     e.preventDefault();
     if (newShop.name && newShop.city) {
-      setShops([...shops, { ...newShop, id: Date.now() }]);
-      setNewShop({ name: '', city: '', owner: '', contact: '' });
-      setShowAddShop(false);
+      try {
+        // First we need the city ID. Since the UI only has the city name, we need to fetch cities to match.
+        const citiesRes = await fetch('http://localhost:8080/api/cities');
+        const allCities = await citiesRes.json();
+        const cityObj = allCities.find(c => c.name === newShop.city);
+
+        if (!cityObj) {
+          console.error("City not found in database!");
+          return;
+        }
+
+        const response = await fetch('http://localhost:8080/api/shops', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: newShop.name,
+            owner: newShop.owner,
+            contact: newShop.contact,
+            address: 'Not Provided',
+            city: { id: cityObj.id }
+          })
+        });
+
+        if (response.ok) {
+          const savedShop = await response.json();
+          setShops([...shops, {
+            id: savedShop.id,
+            name: savedShop.name,
+            city: newShop.city, // The backend response might only contain the city ID, so use the known name
+            owner: savedShop.owner || savedShop.address,
+            contact: savedShop.contact || 'N/A'
+          }]);
+          setNewShop({ name: '', city: '', owner: '', contact: '' });
+          setShowAddShop(false);
+        } else {
+          console.error("Failed to save shop");
+        }
+      } catch (err) {
+        console.error("Error saving shop:", err);
+      }
     }
   };
 
@@ -84,7 +150,7 @@ export default function AdminDashboard({ onLogout }) {
                     <td>{shop.owner}</td>
                     <td>{shop.contact}</td>
                     <td>
-                      <button className="action-link">View Details</button>
+                      <button className="action-link" onClick={() => setSelectedShopDetails(shop)}>View Details</button>
                     </td>
                   </tr>
                 )) : (
@@ -97,6 +163,63 @@ export default function AdminDashboard({ onLogout }) {
               </tbody>
             </table>
           </div>
+
+          {/* Add Shop Modal */}
+          {showAddShop && (
+            <div className="modal-overlay">
+              <div className="modal-content">
+                <h3>Add New Shop</h3>
+                <form onSubmit={handleAddShop}>
+                  <div className="form-group">
+                    <label>Shop Name</label>
+                    <div className="input-wrapper">
+                      <input type="text" value={newShop.name} onChange={e => setNewShop({ ...newShop, name: e.target.value })} required placeholder="e.g. Super Mart" />
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label>City</label>
+                    <div className="input-wrapper" style={{ background: 'rgba(15, 23, 42, 0.4)', borderRadius: '12px', padding: '14px 16px', color: 'var(--text-muted)' }}>
+                      {newShop.city || selectedCityView}
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label>Owner Name</label>
+                    <div className="input-wrapper">
+                      <input type="text" value={newShop.owner} onChange={e => setNewShop({ ...newShop, owner: e.target.value })} required placeholder="e.g. John Doe" />
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label>Contact Number</label>
+                    <div className="input-wrapper">
+                      <input type="text" value={newShop.contact} onChange={e => setNewShop({ ...newShop, contact: e.target.value })} required placeholder="e.g. 9876543210" />
+                    </div>
+                  </div>
+                  <div className="modal-actions">
+                    <button type="button" className="cancel-btn" onClick={() => setShowAddShop(false)}>Cancel</button>
+                    <button type="submit" className="submit-btn">Save Shop</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Shop Details Modal */}
+          {selectedShopDetails && (
+            <div className="modal-overlay">
+              <div className="modal-content">
+                <h3>Shop Details</h3>
+                <div style={{ marginBottom: '20px', lineHeight: '1.6' }}>
+                  <p><strong>Name:</strong> {selectedShopDetails.name}</p>
+                  <p><strong>City:</strong> {selectedShopDetails.city}</p>
+                  <p><strong>Owner:</strong> {selectedShopDetails.owner}</p>
+                  <p><strong>Contact:</strong> {selectedShopDetails.contact}</p>
+                </div>
+                <div className="modal-actions">
+                  <button type="button" className="submit-btn" onClick={() => setSelectedShopDetails(null)}>Close</button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       );
     }
@@ -128,45 +251,6 @@ export default function AdminDashboard({ onLogout }) {
                 <div className="modal-actions">
                   <button type="button" className="cancel-btn" onClick={() => setShowAddCity(false)}>Cancel</button>
                   <button type="submit" className="submit-btn">Save City</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* Add Shop Modal */}
-        {showAddShop && (
-          <div className="modal-overlay">
-            <div className="modal-content">
-              <h3>Add New Shop</h3>
-              <form onSubmit={handleAddShop}>
-                <div className="form-group">
-                  <label>Shop Name</label>
-                  <div className="input-wrapper">
-                    <input type="text" value={newShop.name} onChange={e => setNewShop({ ...newShop, name: e.target.value })} required placeholder="e.g. Super Mart" />
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label>City</label>
-                  <div className="input-wrapper" style={{ background: 'rgba(15, 23, 42, 0.4)', borderRadius: '12px', padding: '14px 16px', color: 'var(--text-muted)' }}>
-                    {newShop.city || selectedCityView}
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label>Owner Name</label>
-                  <div className="input-wrapper">
-                    <input type="text" value={newShop.owner} onChange={e => setNewShop({ ...newShop, owner: e.target.value })} required placeholder="e.g. John Doe" />
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label>Contact Number</label>
-                  <div className="input-wrapper">
-                    <input type="text" value={newShop.contact} onChange={e => setNewShop({ ...newShop, contact: e.target.value })} required placeholder="e.g. 9876543210" />
-                  </div>
-                </div>
-                <div className="modal-actions">
-                  <button type="button" className="cancel-btn" onClick={() => setShowAddShop(false)}>Cancel</button>
-                  <button type="submit" className="submit-btn">Save Shop</button>
                 </div>
               </form>
             </div>
@@ -256,13 +340,13 @@ export default function AdminDashboard({ onLogout }) {
             <div className="stats-grid">
               <div className="stat-card">
                 <h3>Total Orders Today</h3>
-                <p className="stat-value">124</p>
-                <span className="stat-change positive">+15% vs yesterday</span>
+                <p className="stat-value">0</p>
+                <span className="stat-change text-neutral">No orders yet</span>
               </div>
               <div className="stat-card">
                 <h3>Total Revenue Today</h3>
-                <p className="stat-value">$32,450</p>
-                <span className="stat-change positive">+8% vs yesterday</span>
+                <p className="stat-value">$0</p>
+                <span className="stat-change text-neutral">No revenue yet</span>
               </div>
               <div className="stat-card">
                 <h3>Total Cities Active</h3>
@@ -274,16 +358,8 @@ export default function AdminDashboard({ onLogout }) {
             <div className="content-section">
               <h2>Incoming Orders (Awaiting Approval)</h2>
               <div className="order-list">
-                <div className="order-item">
-                  <div className="order-info">
-                    <h4>Patel Supermart</h4>
-                    <p>Rep: Amit K. • Mumbai • 15 Items</p>
-                  </div>
-                  <div className="order-total">$450.00</div>
-                  <div className="order-actions">
-                    <button className="btn-approve">Approve</button>
-                    <button className="btn-reject">Reject</button>
-                  </div>
+                <div className="placeholder-box" style={{ width: '100%' }}>
+                  <p>No incoming orders at the moment.</p>
                 </div>
               </div>
             </div>

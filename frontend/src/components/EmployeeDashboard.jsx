@@ -1,20 +1,10 @@
 import { useState } from 'react';
 import './Dashboard.css';
 
-const MOCK_CITIES = ['Mumbai', 'Pune', 'Delhi'];
-const MOCK_SHOPS = [
-  { id: 1, name: 'Patel Supermart', city: 'Mumbai', owner: 'R. Patel', contact: '9876543210' },
-  { id: 2, name: 'Sharma Kirana Store', city: 'Pune', owner: 'A. Sharma', contact: '9876543212' },
-  { id: 3, name: 'Gupta General Store', city: 'Delhi', owner: 'M. Gupta', contact: '9876543214' }
-];
+const MOCK_CITIES = [];
+const MOCK_SHOPS = [];
 
-const MOCK_PRODUCTS = [
-  { id: 1, name: 'Premium Basmati Rice 25kg', mrp: 45.00, gst: 5 },
-  { id: 2, name: 'Wheat Flour 10kg', mrp: 12.50, gst: 0 },
-  { id: 3, name: 'Refined Sugar 50kg', mrp: 38.00, gst: 5 },
-  { id: 4, name: 'Sunflower Oil 15L', mrp: 28.00, gst: 12 },
-  { id: 5, name: 'Lentils (Toor Dal) 5kg', mrp: 9.50, gst: 0 }
-];
+const MOCK_PRODUCTS = [];
 
 export default function EmployeeDashboard({ onLogout }) {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -260,18 +250,18 @@ export default function EmployeeDashboard({ onLogout }) {
             <div className="stats-grid">
               <div className="stat-card">
                 <h3>Orders Taken Today</h3>
-                <p className="stat-value">14</p>
-                <span className="stat-change positive">+2 from yesterday</span>
+                <p className="stat-value">0</p>
+                <span className="stat-change text-neutral">No orders yet</span>
               </div>
               <div className="stat-card">
                 <h3>Sales Volume Today</h3>
-                <p className="stat-value">$3,240</p>
-                <span className="stat-change positive">85% of daily target</span>
+                <p className="stat-value">$0</p>
+                <span className="stat-change text-neutral">No sales yet</span>
               </div>
               <div className="stat-card">
                 <h3>Shops Visited</h3>
-                <p className="stat-value">8</p>
-                <span className="stat-change text-neutral">4 shops remaining on route</span>
+                <p className="stat-value">0</p>
+                <span className="stat-change text-neutral">Route not started</span>
               </div>
             </div>
 
@@ -288,29 +278,8 @@ export default function EmployeeDashboard({ onLogout }) {
               </div>
               
               <div className="order-list">
-                <div className="order-item">
-                  <div className="order-info">
-                    <h4>Patel Supermart</h4>
-                    <p>Mumbai • 15 Items</p>
-                  </div>
-                  <div className="order-total">$450.00</div>
-                  <div className="order-status status-pending">Pending Approval</div>
-                </div>
-                <div className="order-item">
-                  <div className="order-info">
-                    <h4>Sharma Kirana Store</h4>
-                    <p>Pune • 42 Items</p>
-                  </div>
-                  <div className="order-total">$1,120.00</div>
-                  <div className="order-status status-approved">Approved</div>
-                </div>
-                <div className="order-item">
-                  <div className="order-info">
-                    <h4>City Mini Mart</h4>
-                    <p>Pune • 8 Items</p>
-                  </div>
-                  <div className="order-total">$210.00</div>
-                  <div className="order-status status-approved">Approved</div>
+                <div className="placeholder-box" style={{ width: '100%' }}>
+                  <p>No recent orders found.</p>
                 </div>
               </div>
             </div>
