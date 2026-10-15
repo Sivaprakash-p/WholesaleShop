@@ -623,3 +623,402 @@
 
 
 .product-search-item:hover { background: rgba(99, 102, 241, 0.2) !important; }
+
+/* ================= PRODUCT & GST STYLING ================= */
+
+.section-subtitle {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin: 4px 0 0 0;
+}
+
+.product-summary-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.summary-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 180px;
+}
+
+.summary-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.summary-val {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.product-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.product-search-wrapper {
+  flex: 1;
+  min-width: 260px;
+}
+
+.tax-filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-pill {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.filter-pill:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+}
+
+.filter-pill.active {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: var(--primary);
+  color: #a5b4fc;
+  font-weight: 600;
+}
+
+.product-table-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hsn-badge {
+  display: inline-block;
+  background: rgba(148, 163, 184, 0.12);
+  color: #cbd5e1;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.rate-cell {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.rate-cell.net-rate {
+  color: #38bdf8;
+}
+
+.rate-cell.base-rate {
+  color: #34d399;
+  font-weight: 700;
+}
+
+.th-subtext {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: rgba(148, 163, 184, 0.7);
+  margin-top: 2px;
+}
+
+.gst-tag {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  color: #c7d2fe;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.gst-split {
+  font-size: 10px;
+  color: rgba(199, 210, 254, 0.7);
+  margin-top: 2px;
+}
+
+.tax-cell {
+  font-weight: 600;
+  color: #fbbf24;
+}
+
+.tax-percent-sub {
+  display: block;
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 400;
+  margin-top: 2px;
+}
+
+.table-action-btns {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.edit-link {
+  color: #60a5fa;
+}
+
+.delete-link {
+  color: #f87171;
+}
+
+.delete-link:hover {
+  color: #ef4444;
+}
+
+/* Add / Edit Product Modal specific styles */
+.modal-content.product-modal {
+  max-width: 620px;
+  width: 95%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  margin-bottom: 24px;
+}
+
+.modal-desc {
+  display: block;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 600px) {
+  .form-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.label-tip {
+  font-size: 11px;
+  color: #38bdf8;
+  font-weight: normal;
+}
+
+.currency-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-prefix {
+  position: absolute;
+  left: 16px;
+  color: #38bdf8;
+  font-weight: 700;
+  font-size: 16px;
+  pointer-events: none;
+}
+
+.currency-input-wrapper input {
+  padding-left: 36px !important;
+}
+
+.percent-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-suffix {
+  position: absolute;
+  right: 16px;
+  color: #c7d2fe;
+  font-weight: 700;
+  font-size: 15px;
+  pointer-events: none;
+}
+
+.percent-input-wrapper input {
+  padding-right: 36px !important;
+}
+
+.quick-gst-chips {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.gst-chip {
+  flex: 1;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  padding: 6px 4px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.gst-chip:hover {
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--text-main);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+.gst-chip.selected {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
+}
+
+/* Live Tax Calculation Breakdown Card */
+.tax-breakdown-card {
+  margin-top: 20px;
+  background: linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.8));
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 14px;
+  padding: 16px 20px;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
+}
+
+.breakdown-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.breakdown-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.breakdown-pill {
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (min-width: 520px) {
+  .breakdown-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.breakdown-item {
+  display: flex;
+  flex-direction: column;
+  background: rgba(15, 23, 42, 0.4);
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.breakdown-item.final-total {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: rgba(99, 102, 241, 0.25);
+}
+
+.bd-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.bd-value {
+  font-size: 16px;
+  font-weight: 700;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.bd-formula {
+  font-size: 10px;
+  color: rgba(148, 163, 184, 0.6);
+  margin-top: 4px;
+}
+
+.rate-highlight {
+  color: #34d399;
+}
+
+.tax-highlight {
+  color: #fbbf24;
+}
+
+.total-highlight {
+  color: #38bdf8;
+}
+
+.empty-catalog-box {
+  padding: 20px;
+}
+
+.empty-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+.empty-catalog-box h3 {
+  font-size: 18px;
+  margin: 0 0 8px 0;
+  color: var(--text-main);
+}
+
+.empty-catalog-box p {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin: 0;
+}
+

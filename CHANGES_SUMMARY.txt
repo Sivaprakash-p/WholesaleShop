@@ -1,0 +1,226 @@
+================================================================================
+WHOLESALE ORDER APP - DETAILED CHANGE LOG
+Date: October 15, 2026
+Feature: Product Management & GST Calculation System
+================================================================================
+
+--------------------------------------------------------------------------------
+1. OVERVIEW OF CHANGES
+--------------------------------------------------------------------------------
+Implemented the complete end-to-end "Add Product" and "Products & GST Catalog" 
+feature across both backend (Spring Boot) and frontend (React).
+
+The system enables admin users to enter 4 primary fields:
+  1. Product Name
+  2. HSN Code
+  3. Net Rate (Total Selling Rate including Tax)
+  4. Tax (GST %)
+
+From these inputs, the system automatically computes:
+  - Rate (Excluded Tax / Base Price): Net Rate / (1 + GST% / 100)
+  - Tax Amount: Net Rate - Rate
+  - CGST Value (Central GST): Tax Amount / 2  (at GST% / 2)
+  - SGST Value (State GST): Tax Amount / 2    (at GST% / 2)
+
+--------------------------------------------------------------------------------
+2. LIST OF CREATED AND MODIFIED FILES
+--------------------------------------------------------------------------------
+
+[NEW FILES - BACKEND]
+1. backend/src/main/java/com/wholesale/orderapp/entity/Product.java
+2. backend/src/main/java/com/wholesale/orderapp/repository/ProductRepository.java
+3. backend/src/main/java/com/wholesale/orderapp/controller/ProductController.java
+
+[MODIFIED FILES - FRONTEND]
+4. frontend/src/components/AdminDashboard.jsx
+5. frontend/src/components/Dashboard.css
+6. frontend/src/components/EmployeeDashboard.jsx
+
+--------------------------------------------------------------------------------
+3. FILE-BY-FILE DETAILED BREAKDOWN
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+FILE 1: backend/src/main/java/com/wholesale/orderapp/entity/Product.java
+TYPE: Backend Java Entity (JPA / Hibernate)
+ACTION: Created new file
+--------------------------------------------------------------------------------
+- Purpose:
+  Represents the "products" table in the database.
+
+- Database Table: "products"
+
+- Fields:
+  * id (Long): Primary key, auto-incremented.
+  * name (String): Name of the product (e.g., "DAILY 100", "Basmati Rice 1kg").
+  * hsnCode (String): Harmonized System of Nomenclature code (e.g., "33074100").
+  * netRate (Double): Total selling price per unit inclusive of GST.
+  * taxGst (Double): Applicable GST percentage (e.g., 5.0, 18.0).
+  * rate (Double): Computed base rate before tax.
+  * cgstPercent (Double): Central GST percentage (taxGst / 2).
+  * sgstPercent (Double): State GST percentage (taxGst / 2).
+  * cgstAmount (Double): Computed Central GST currency value.
+  * sgstAmount (Double): Computed State GST currency value.
+  * taxAmount (Double): Computed total GST currency value.
+
+- Automatic Calculation Logic (@PrePersist & @PreUpdate):
+  * Divisor: 1.0 + (taxGst / 100.0)
+  * rate: Math.round((netRate / divisor) * 100.0) / 100.0
+  * taxAmount: Math.round((netRate - rate) * 100.0) / 100.0
+  * cgstPercent: taxGst / 2.0
+  * sgstPercent: taxGst / 2.0
+  * cgstAmount: Math.round((taxAmount / 2.0) * 100.0) / 100.0
+  * sgstAmount: Math.round((taxAmount - cgstAmount) * 100.0) / 100.0
+
+--------------------------------------------------------------------------------
+FILE 2: backend/src/main/java/com/wholesale/orderapp/repository/ProductRepository.java
+TYPE: Spring Data JPA Repository
+ACTION: Created new file
+--------------------------------------------------------------------------------
+- Purpose:
+  Provides database access, CRUD operations, and pagination for Product entities.
+
+- Key Methods:
+  * JpaRepository default methods: findAll(), findById(), save(), deleteById().
+  * Custom query method: findByNameContainingIgnoreCase(String name) for 
+    searching products by keyword.
+
+--------------------------------------------------------------------------------
+FILE 3: backend/src/main/java/com/wholesale/orderapp/controller/ProductController.java
+TYPE: Spring Boot REST Controller
+ACTION: Created new file
+--------------------------------------------------------------------------------
+- Base Route: /api/products
+- Cross-Origin: @CrossOrigin(origins = "*") (enables React frontend access)
+
+- REST Endpoints:
+  * GET    /api/products       - Fetch list of all products with full GST breakdowns.
+  * GET    /api/products/{id}  - Fetch a single product by ID.
+  * POST   /api/products       - Create a new product. Triggers calculateTaxFields() 
+                                 and saves to DB.
+  * PUT    /api/products/{id}  - Update an existing product's name, HSN, Net Rate, 
+                                 or GST%, recalculates fields and saves.
+  * DELETE /api/products/{id}  - Delete a product from database by ID.
+
+--------------------------------------------------------------------------------
+FILE 4: frontend/src/components/AdminDashboard.jsx
+TYPE: React Component
+ACTION: Modified
+--------------------------------------------------------------------------------
+- State Additions:
+  * products: Array storing live products fetched from backend.
+  * showAddProduct: Boolean controlling open/close of the Add/Edit Product modal.
+  * editingProduct: Holds the product object when editing, null when creating.
+  * productSearchTerm: Search query string for filtering by name or HSN code.
+  * productForm: Form state object with { name, hsnCode, netRate, taxGst }.
+
+- Functions & Handlers Added:
+  * fetchProducts(): Loads products from http://localhost:8080/api/products.
+  * calculateTaxBreakdown(netRate, taxGst): Real-time live calculator function 
+    running on every keystroke in the modal.
+  * openAddProductModal(): Resets form and opens the modal.
+  * openEditProductModal(product): Populates form with existing product and opens modal.
+  * closeProductModal(): Closes modal and resets form.
+  * handleSaveProduct(e): Sends POST (create) or PUT (update) HTTP request to backend.
+  * handleDeleteProduct(id): Confirms and sends DELETE request to backend.
+  * renderInventoryTab(): Renders the complete "Products & GST Catalog" view.
+
+- UI Components Added:
+  * Products Table:
+      - Column 1: # (Row index)
+      - Column 2: Product Name
+      - Column 3: HSN Code (styled badge)
+      - Column 4: Net Rate (₹)
+      - Column 5: Tax (GST %) with half-split indicator (e.g. 18% (9.0% + 9.0%))
+      - Column 6: Rate (Excl. Tax) [Reduced after tax]
+      - Column 7: CGST Value [Central GST]
+      - Column 8: SGST Value [State GST]
+      - Column 9: Actions (Edit & Delete buttons)
+  * Add / Edit Product Modal:
+      - Product Name text input
+      - HSN Code text input
+      - Net Rate (₹) number input with currency prefix
+      - Tax (GST %) number input with percentage suffix
+      - Quick GST slab chips (0%, 5%, 12%, 18%, 28%)
+      - Live Tax Calculation Breakdown card showing Rate, CGST, SGST, and Net Rate
+      - Cancel and Save buttons
+
+- UI Cleanups (per user request):
+  * Removed "Active Tax Slabs" summary card.
+  * Removed "Wholesale Rule" summary card.
+  * Removed the filter pill buttons ("All Tax Slabs", "0% GST", "5% GST", etc.).
+  * Retained the clean Total Catalog Items counter and full-width Search bar.
+
+--------------------------------------------------------------------------------
+FILE 5: frontend/src/components/Dashboard.css
+TYPE: CSS Stylesheet
+ACTION: Modified
+--------------------------------------------------------------------------------
+- New CSS Classes Added:
+  * .product-summary-bar & .summary-item: Glassmorphism container for catalog metrics.
+  * .product-filter-bar & .product-search-wrapper: Responsive search container.
+  * .hsn-badge: Monospace pill badge for HSN codes.
+  * .rate-cell.net-rate: Cyan highlighted styling for Net Rates.
+  * .rate-cell.base-rate: Emerald green styling for Base Rates.
+  * .gst-tag & .gst-split: Indigo badge layout showing GST% and (CGST + SGST) split.
+  * .tax-cell & .tax-percent-sub: Amber styling for CGST and SGST currency amounts.
+  * .currency-input-wrapper & .input-prefix: Floating '₹' symbol inside number input.
+  * .percent-input-wrapper & .input-suffix: Floating '%' symbol inside tax input.
+  * .quick-gst-chips & .gst-chip: Pill buttons for quick slab selection with active glow.
+  * .tax-breakdown-card, .breakdown-grid, .breakdown-item: Card showing the real-time 
+    calculation breakdown inside the Add Product modal.
+  * .empty-catalog-box: Clean empty-state view with icon and call-to-action button.
+
+--------------------------------------------------------------------------------
+FILE 6: frontend/src/components/EmployeeDashboard.jsx
+TYPE: React Component
+ACTION: Modified
+--------------------------------------------------------------------------------
+- Backend Integration:
+  * Replaced hardcoded empty mock arrays (MOCK_PRODUCTS, MOCK_CITIES, MOCK_SHOPS) 
+    with useEffect() fetch calls to /api/products, /api/cities, and /api/shops.
+- Order Form Integration:
+  * Connected product search to the live catalog products.
+  * Employees can search items by Product Name or HSN code.
+  * Displayed Net Rate, Base Rate, HSN code, and GST% in search dropdown results.
+  * Updated order table to show Product Name, HSN Code, Quantity, Free, 
+    Net Rate (₹), Tax (GST %), Rate (Before Tax), Amount (₹), and Action.
+  * Converted currency display from '$' to '₹'.
+
+--------------------------------------------------------------------------------
+4. VERIFIED EXAMPLES FROM REAL INVOICE
+--------------------------------------------------------------------------------
+Formula:
+  Rate (Excluded Tax) = Net Rate / (1 + GST% / 100)
+  Total GST = Net Rate - Rate
+  CGST = Total GST / 2
+  SGST = Total GST / 2
+
+Item 1: DAILY 100
+  - Net Rate: ₹250.00 | GST: 5%
+  - Rate: ₹238.10  (250 / 1.05)
+  - CGST: ₹5.95
+  - SGST: ₹5.95
+  - For 4 Qty: Taxable Value = ₹952.38 | CGST = ₹23.81 | SGST = ₹23.81 | Total = ₹1000.00
+
+Item 2: GOLDEN GOBRA BATHI
+  - Net Rate: ₹240.00 | GST: 5%
+  - Rate: ₹228.57  (240 / 1.05)
+  - CGST: ₹5.72
+  - SGST: ₹5.71
+  - For 4 Qty: Taxable Value = ₹914.28 | CGST = ₹22.86 | SGST = ₹22.86 | Total = ₹960.00
+
+Item 3: FLORA 100
+  - Net Rate: ₹270.00 | GST: 5%
+  - Rate: ₹257.14  (270 / 1.05)
+  - CGST: ₹6.43
+  - SGST: ₹6.43
+  - For 2 Qty: Taxable Value = ₹514.28 | CGST = ₹12.86 | SGST = ₹12.86 | Total = ₹540.00
+
+Item 4: Basmati Rice 1kg
+  - Net Rate: ₹118.00 | GST: 18%
+  - Rate: ₹100.00  (118 / 1.18)
+  - CGST: ₹9.00
+  - SGST: ₹9.00
+  - Total: ₹118.00
+================================================================================

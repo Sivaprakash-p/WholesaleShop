@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Wholesale Order App - Detailed Change Log</title>
+<style>
+  body { font-family: Calibri, Arial, sans-serif; line-height: 1.6; color: #1e293b; padding: 20px; }
+  h1 { color: #1e40af; border-bottom: 2px solid #3b82f6; padding-bottom: 8px; }
+  h2 { color: #1d4ed8; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-top: 24px; }
+  h3 { color: #0f172a; margin-top: 18px; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+  th, td { border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left; }
+  th { background-color: #f1f5f9; color: #0f172a; font-weight: bold; }
+  tr:nth-child(even) { background-color: #f8fafc; }
+  code { background-color: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: Consolas, monospace; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+  .created { background-color: #dcfce7; color: #15803d; }
+  .modified { background-color: #e0e7ff; color: #4338ca; }
+  .formula-box { background: #f8fafc; border-left: 4px solid #3b82f6; padding: 12px 16px; margin: 12px 0; font-family: Consolas, monospace; }
+</style>
+</head>
+<body>
+
+<h1>Wholesale Order App - Detailed Change Log</h1>
+<p><strong>Date:</strong> October 15, 2026<br>
+<strong>Feature:</strong> Product Management &amp; GST Calculation System</p>
+
+<h2>1. Overview of Changes</h2>
+<p>Implemented the complete end-to-end "Add Product" and "Products &amp; GST Catalog" feature across both backend (Spring Boot) and frontend (React).</p>
+<p>The admin user provides 4 primary inputs:</p>
+<ol>
+  <li><strong>Product Name</strong></li>
+  <li><strong>HSN Code</strong></li>
+  <li><strong>Net Rate</strong> (Total Selling Price inclusive of GST)</li>
+  <li><strong>Tax (GST %)</strong></li>
+</ol>
+<p>From these inputs, the system automatically computes:</p>
+<div class="formula-box">
+  Rate (Excluded Tax / Base Price) = Net Rate / (1 + GST% / 100)<br>
+  Tax Amount = Net Rate - Rate<br>
+  CGST Value = Tax Amount / 2<br>
+  SGST Value = Tax Amount / 2
+</div>
+
+<h2>2. Files Created and Modified</h2>
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>File Path</th>
+      <th>Type</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td><code>backend/src/main/java/com/wholesale/orderapp/entity/Product.java</code></td>
+      <td>Backend Java Entity</td>
+      <td><span class="badge created">CREATED</span></td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td><code>backend/src/main/java/com/wholesale/orderapp/repository/ProductRepository.java</code></td>
+      <td>Backend JPA Repository</td>
+      <td><span class="badge created">CREATED</span></td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td><code>backend/src/main/java/com/wholesale/orderapp/controller/ProductController.java</code></td>
+      <td>Backend REST Controller</td>
+      <td><span class="badge created">CREATED</span></td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td><code>frontend/src/components/AdminDashboard.jsx</code></td>
+      <td>Frontend React Component</td>
+      <td><span class="badge modified">MODIFIED</span></td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td><code>frontend/src/components/Dashboard.css</code></td>
+      <td>Frontend CSS Stylesheet</td>
+      <td><span class="badge modified">MODIFIED</span></td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td><code>frontend/src/components/EmployeeDashboard.jsx</code></td>
+      <td>Frontend React Component</td>
+      <td><span class="badge modified">MODIFIED</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>3. File-by-File Detailed Breakdown</h2>
+
+<h3>File 1: Product.java (Backend Entity)</h3>
+<ul>
+  <li><strong>Location:</strong> <code>backend/src/main/java/com/wholesale/orderapp/entity/Product.java</code></li>
+  <li><strong>Action:</strong> Created new file.</li>
+  <li><strong>Fields:</strong>
+    <ul>
+      <li><code>id</code> (Long): Primary Key (Auto-generated).</li>
+      <li><code>name</code> (String): Product Name.</li>
+      <li><code>hsnCode</code> (String): HSN code.</li>
+      <li><code>netRate</code> (Double): Total selling price inclusive of tax.</li>
+      <li><code>taxGst</code> (Double): Tax (GST %).</li>
+      <li><code>rate</code> (Double): Automatically computed base rate before tax.</li>
+      <li><code>cgstPercent</code> (Double): Central GST percentage (GST / 2).</li>
+      <li><code>sgstPercent</code> (Double): State GST percentage (GST / 2).</li>
+      <li><code>cgstAmount</code> (Double): Central GST currency amount.</li>
+      <li><code>sgstAmount</code> (Double): State GST currency amount.</li>
+      <li><code>taxAmount</code> (Double): Total GST currency amount.</li>
+    </ul>
+  </li>
+  <li><strong>Auto-Calculation:</strong> Annotated with <code>@PrePersist</code> and <code>@PreUpdate</code> in <code>calculateTaxFields()</code> so that any created or updated product automatically calculates its Rate, CGST, and SGST.</li>
+</ul>
+
+<h3>File 2: ProductRepository.java (Backend Repository)</h3>
+<ul>
+  <li><strong>Location:</strong> <code>backend/src/main/java/com/wholesale/orderapp/repository/ProductRepository.java</code></li>
+  <li><strong>Action:</strong> Created new file.</li>
+  <li><strong>Details:</strong> Extends <code>JpaRepository&lt;Product, Long&gt;</code>, includes case-insensitive name searching.</li>
+</ul>
+
+<h3>File 3: ProductController.java (Backend Controller)</h3>
+<ul>
+  <li><strong>Location:</strong> <code>backend/src/main/java/com/wholesale/orderapp/controller/ProductController.java</code></li>
+  <li><strong>Action:</strong> Created new file.</li>
+  <li><strong>Endpoints:</strong>
+    <ul>
+      <li><code>GET /api/products</code>: Returns all products with full GST breakdowns.</li>
+      <li><code>GET /api/products/{id}</code>: Returns product by ID.</li>
+      <li><code>POST /api/products</code>: Saves a new product and recalculates fields.</li>
+      <li><code>PUT /api/products/{id}</code>: Updates existing product and recalculates fields.</li>
+      <li><code>DELETE /api/products/{id}</code>: Removes product from database.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3>File 4: AdminDashboard.jsx (Frontend Component)</h3>
+<ul>
+  <li><strong>Location:</strong> <code>frontend/src/components/AdminDashboard.jsx</code></li>
+  <li><strong>Action:</strong> Modified.</li>
+  <li><strong>Key Additions:</strong>
+    <ul>
+      <li>Added <code>products</code> state and fetched data from <code>/api/products</code> on load.</li>
+      <li>Added real-time calculation preview helper <code>calculateTaxBreakdown()</code>.</li>
+      <li>Built the "+ Add Product" modal with real-time tax breakdown card.</li>
+      <li>Built the products table displaying #, Name, HSN Code, Net Rate (₹), Tax (GST %), Rate (Excl. Tax), CGST Value, SGST Value, and Actions (Edit, Delete).</li>
+      <li>Streamlined UI per user request by removing the Active Tax Slabs card, Wholesale Rule card, and the tax filter pill buttons.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3>File 5: Dashboard.css (Frontend Styles)</h3>
+<ul>
+  <li><strong>Location:</strong> <code>frontend/src/components/Dashboard.css</code></li>
+  <li><strong>Action:</strong> Modified.</li>
+  <li><strong>Key Additions:</strong>
+    <ul>
+      <li>Styled table headers and cells with color-coded currency formatting (cyan for Net Rate, emerald for Base Rate, amber for CGST/SGST).</li>
+      <li>Styled HSN badges with monospace fonts.</li>
+      <li>Styled GST tags displaying split percentages (e.g. 18% (9.0% + 9.0%)).</li>
+      <li>Added modal inputs with embedded currency symbols (₹ and %).</li>
+      <li>Added interactive quick-select tax chips (0%, 5%, 12%, 18%, 28%).</li>
+      <li>Added live breakdown preview card with auto-computed tags.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3>File 6: EmployeeDashboard.jsx (Frontend Component)</h3>
+<ul>
+  <li><strong>Location:</strong> <code>frontend/src/components/EmployeeDashboard.jsx</code></li>
+  <li><strong>Action:</strong> Modified.</li>
+  <li><strong>Key Additions:</strong>
+    <ul>
+      <li>Connected to backend APIs <code>/api/products</code>, <code>/api/cities</code>, and <code>/api/shops</code>.</li>
+      <li>Updated employee order flow to search real products by name or HSN code.</li>
+      <li>Converted currency display from '$' to '₹'.</li>
+      <li>Added columns for HSN code, Net Rate, Tax GST%, and Rate before tax.</li>
+    </ul>
+  </li>
+</ul>
+
+<h2>4. Invoice Calculation Examples Verified</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Product Description</th>
+      <th>HSN Code</th>
+      <th>Net Rate (₹)</th>
+      <th>Tax (GST %)</th>
+      <th>Rate (Excl. Tax)</th>
+      <th>CGST (₹)</th>
+      <th>SGST (₹)</th>
+      <th>Formula</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>DAILY 100</strong></td>
+      <td>33074100</td>
+      <td>₹250.00</td>
+      <td>5%</td>
+      <td>₹238.10</td>
+      <td>₹5.95</td>
+      <td>₹5.95</td>
+      <td>250 ÷ 1.05</td>
+    </tr>
+    <tr>
+      <td><strong>GOLDEN GOBRA BATHI</strong></td>
+      <td>33074100</td>
+      <td>₹240.00</td>
+      <td>5%</td>
+      <td>₹228.57</td>
+      <td>₹5.72</td>
+      <td>₹5.71</td>
+      <td>240 ÷ 1.05</td>
+    </tr>
+    <tr>
+      <td><strong>FLORA 100</strong></td>
+      <td>33074100</td>
+      <td>₹270.00</td>
+      <td>5%</td>
+      <td>₹257.14</td>
+      <td>₹6.43</td>
+      <td>₹6.43</td>
+      <td>270 ÷ 1.05</td>
+    </tr>
+    <tr>
+      <td><strong>Basmati Rice 1kg</strong></td>
+      <td>100630</td>
+      <td>₹118.00</td>
+      <td>18%</td>
+      <td>₹100.00</td>
+      <td>₹9.00</td>
+      <td>₹9.00</td>
+      <td>118 ÷ 1.18</td>
+    </tr>
+  </tbody>
+</table>
+
+</body>
+</html>

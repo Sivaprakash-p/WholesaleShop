@@ -1,13 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './Dashboard.css';
-
-const MOCK_CITIES = [];
-const MOCK_SHOPS = [];
-
-const MOCK_PRODUCTS = [];
 
 export default function EmployeeDashboard({ onLogout }) {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [cities, setCities] = useState([]);
+  const [shops, setShops] = useState([]);
+  const [products, setProducts] = useState([]);
+
   const [selectedCity, setSelectedCity] = useState(null);
   const [citySearchTerm, setCitySearchTerm] = useState('');
   const [shopSearchTerm, setShopSearchTerm] = useState('');
@@ -16,6 +15,32 @@ export default function EmployeeDashboard({ onLogout }) {
   const [activeShopForOrder, setActiveShopForOrder] = useState(null);
   const [productSearchTerm, setProductSearchTerm] = useState('');
   const [orderItems, setOrderItems] = useState([]);
+
+  // Fetch cities, shops, and products from backend
+  useEffect(() => {
+    fetch('http://localhost:8080/api/cities')
+      .then(res => res.json())
+      .then(data => setCities(data.map(c => c.name)))
+      .catch(err => console.error("Error fetching cities:", err));
+
+    fetch('http://localhost:8080/api/shops')
+      .then(res => res.json())
+      .then(data => {
+        setShops(data.map(s => ({
+          id: s.id,
+          name: s.name,
+          city: s.city ? s.city.name : '',
+          owner: s.owner || s.address || 'N/A',
+          contact: s.contact || 'N/A'
+        })));
+      })
+      .catch(err => console.error("Error fetching shops:", err));
+
+    fetch('http://localhost:8080/api/products')
+      .then(res => res.json())
+      .then(data => setProducts(data))
+      .catch(err => console.error("Error fetching products:", err));
+  }, []);
 
   const handleAddProductToOrder = (product) => {
     if (!orderItems.find(item => item.id === product.id)) {
@@ -40,10 +65,10 @@ export default function EmployeeDashboard({ onLogout }) {
   const renderNewOrderFlow = () => {
     if (activeShopForOrder) {
       const filteredProducts = productSearchTerm 
-        ? MOCK_PRODUCTS.filter(p => p.name.toLowerCase().includes(productSearchTerm.toLowerCase()))
+        ? products.filter(p => p.name.toLowerCase().includes(productSearchTerm.toLowerCase()) || (p.hsnCode && p.hsnCode.includes(productSearchTerm)))
         : [];
 
-      const grandTotal = orderItems.reduce((acc, item) => acc + (item.qty * item.mrp), 0);
+      const grandTotal = orderItems.reduce((acc, item) => acc + (item.qty * (item.netRate || item.mrp || 0)), 0);
 
       return (
         <div className="content-section fade-in">
@@ -65,7 +90,7 @@ export default function EmployeeDashboard({ onLogout }) {
           <div style={{ position: 'relative', marginBottom: '24px' }}>
             <input 
               type="text" 
-              placeholder="Search products to add..." 
+              placeholder="Search products by name or HSN code..." 
               value={productSearchTerm}
               onChange={(e) => setProductSearchTerm(e.target.value)}
               className="search-input"
@@ -75,7 +100,9 @@ export default function EmployeeDashboard({ onLogout }) {
                 {filteredProducts.map(prod => (
                   <div key={prod.id} style={{ padding: '12px 16px', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)' }} onClick={() => handleAddProductToOrder(prod)} className="product-search-item">
                     <div style={{ fontWeight: '500' }}>{prod.name}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>MRP: ${prod.mrp.toFixed(2)} | GST: {prod.gst}%</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                      HSN: {prod.hsnCode || '—'} | Net Rate: ₹{Number(prod.netRate).toFixed(2)} | Rate (Excl. Tax): ₹{Number(prod.rate).toFixed(2)} | GST: {prod.taxGst}%
+                    </div>
                   </div>
                 ))}
               </div>
@@ -87,11 +114,13 @@ export default function EmployeeDashboard({ onLogout }) {
               <thead>
                 <tr>
                   <th>Product Name</th>
+                  <th>HSN Code</th>
                   <th style={{ width: '80px' }}>Quantity</th>
                   <th style={{ width: '80px' }}>Free</th>
-                  <th>MRP</th>
-                  <th>GST %</th>
-                  <th>Amount</th>
+                  <th>Net Rate (₹)</th>
+                  <th>Tax (GST %)</th>
+                  <th>Rate (Before Tax)</th>
+                  <th>Amount (₹)</th>
                   <th>Action</th>
                 </tr>
               </thead>
@@ -99,22 +128,24 @@ export default function EmployeeDashboard({ onLogout }) {
                 {orderItems.length > 0 ? orderItems.map(item => (
                   <tr key={item.id}>
                     <td><strong>{item.name}</strong></td>
+                    <td><span className="hsn-badge">{item.hsnCode || '—'}</span></td>
                     <td>
                       <input type="number" min="1" value={item.qty} onChange={(e) => updateOrderItem(item.id, 'qty', e.target.value)} style={{ width: '60px', background: 'rgba(15,23,42,0.4)', border: '1px solid var(--border-color)', color: 'white', padding: '6px', borderRadius: '6px' }} />
                     </td>
                     <td>
                       <input type="number" min="0" value={item.free} onChange={(e) => updateOrderItem(item.id, 'free', e.target.value)} style={{ width: '60px', background: 'rgba(15,23,42,0.4)', border: '1px solid var(--border-color)', color: 'white', padding: '6px', borderRadius: '6px' }} />
                     </td>
-                    <td>${item.mrp.toFixed(2)}</td>
-                    <td>{item.gst}%</td>
-                    <td style={{ fontWeight: 'bold', color: 'var(--primary)' }}>${(item.qty * item.mrp).toFixed(2)}</td>
+                    <td style={{ color: '#38bdf8', fontWeight: '600' }}>₹{Number(item.netRate || item.mrp || 0).toFixed(2)}</td>
+                    <td>{item.taxGst || item.gst}%</td>
+                    <td style={{ color: '#34d399', fontWeight: '600' }}>₹{Number(item.rate || 0).toFixed(2)}</td>
+                    <td style={{ fontWeight: 'bold', color: 'var(--primary)' }}>₹{(item.qty * (item.netRate || item.mrp || 0)).toFixed(2)}</td>
                     <td>
                       <button className="action-link" style={{ color: '#ef4444' }} onClick={() => removeOrderItem(item.id)}>Remove</button>
                     </td>
                   </tr>
                 )) : (
                   <tr>
-                    <td colSpan="7" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+                    <td colSpan="9" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
                       No products added yet. Search above to add items to the order.
                     </td>
                   </tr>
@@ -130,7 +161,7 @@ export default function EmployeeDashboard({ onLogout }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Grand Total</div>
-                <div style={{ fontSize: '28px', fontWeight: 'bold', color: 'var(--text-main)' }}>${grandTotal.toFixed(2)}</div>
+                <div style={{ fontSize: '28px', fontWeight: 'bold', color: 'var(--text-main)' }}>₹{grandTotal.toFixed(2)}</div>
               </div>
               <button className="submit-btn" style={{ margin: 0, padding: '14px 32px', fontSize: '16px' }} disabled={orderItems.length === 0}>
                 Submit Order
@@ -142,7 +173,7 @@ export default function EmployeeDashboard({ onLogout }) {
     }
 
     if (selectedCity) {
-      const cityShops = MOCK_SHOPS
+      const cityShops = shops
         .filter(s => s.city === selectedCity)
         .filter(s => s.name.toLowerCase().includes(shopSearchTerm.toLowerCase()));
       
@@ -206,10 +237,10 @@ export default function EmployeeDashboard({ onLogout }) {
         </div>
 
         <div className="cities-flex-list">
-          {MOCK_CITIES
+          {cities
             .filter(city => city.toLowerCase().includes(citySearchTerm.toLowerCase()))
             .map((city, index) => {
-              const cityShopCount = MOCK_SHOPS.filter(s => s.city === city).length;
+              const cityShopCount = shops.filter(s => s.city === city).length;
               return (
                 <div key={city} className="city-list-item" onClick={() => setSelectedCity(city)}>
                   <span className="city-index">{index + 1}.</span>
@@ -218,7 +249,7 @@ export default function EmployeeDashboard({ onLogout }) {
                 </div>
               );
           })}
-          {MOCK_CITIES.filter(city => city.toLowerCase().includes(citySearchTerm.toLowerCase())).length === 0 && (
+          {cities.filter(city => city.toLowerCase().includes(citySearchTerm.toLowerCase())).length === 0 && (
             <div className="placeholder-box" style={{ width: '100%' }}>
               <p>No cities found matching "{citySearchTerm}".</p>
             </div>
