@@ -1,0 +1,371 @@
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+<meta charset="utf-8">
+<title>Backend Database Architecture and Project Review Guide</title>
+<style>
+  body {
+    font-family: 'Calibri', 'Segoe UI', Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.5;
+    color: #1E293B;
+    margin: 40px;
+  }
+  h1 {
+    color: #1E3A8A;
+    font-size: 20pt;
+    border-bottom: 2px solid #DBEAFE;
+    padding-bottom: 6px;
+    margin-top: 24px;
+    margin-bottom: 12px;
+  }
+  h2 {
+    color: #2563EB;
+    font-size: 14pt;
+    margin-top: 16px;
+    margin-bottom: 8px;
+  }
+  .doc-title {
+    color: #1E3A8A;
+    font-size: 26pt;
+    font-weight: bold;
+    margin-bottom: 4px;
+  }
+  .doc-subtitle {
+    color: #64748B;
+    font-size: 14pt;
+    margin-bottom: 20px;
+  }
+  .meta-box {
+    background-color: #F1F5F9;
+    border: 1px solid #CBD5E1;
+    border-radius: 6px;
+    padding: 12px 18px;
+    margin-bottom: 24px;
+  }
+  .callout {
+    background-color: #EFF6FF;
+    border-left: 5px solid #2563EB;
+    padding: 14px 18px;
+    margin: 16px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .callout-title {
+    color: #1E40AF;
+    font-weight: bold;
+    font-size: 11pt;
+    margin-bottom: 6px;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 16px 0;
+  }
+  th {
+    background-color: #1E3A8A;
+    color: #FFFFFF;
+    text-align: left;
+    padding: 10px 12px;
+    font-size: 10pt;
+  }
+  td {
+    border: 1px solid #CBD5E1;
+    padding: 8px 12px;
+    font-size: 9.5pt;
+  }
+  tr:nth-child(even) td {
+    background-color: #F8FAFC;
+  }
+  pre {
+    background-color: #F8FAFC;
+    border: 1px solid #CBD5E1;
+    border-left: 4px solid #64748B;
+    padding: 12px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 9.5pt;
+    overflow-x: auto;
+    border-radius: 4px;
+  }
+  .qa-block {
+    margin-bottom: 16px;
+  }
+  .qa-q {
+    font-weight: bold;
+    color: #1E40AF;
+    font-size: 11pt;
+    margin-bottom: 4px;
+  }
+  .qa-a {
+    margin-left: 12px;
+    color: #334155;
+  }
+</style>
+</head>
+<body>
+
+<div class="doc-title">Wholesale Order Application</div>
+<div class="doc-subtitle">Backend Database Architecture & Project Review Guide</div>
+
+<div class="meta-box">
+  <table style="border: none; margin: 0;">
+    <tr style="background: transparent;">
+      <td style="border: none; padding: 4px 8px;"><strong>Backend Framework:</strong> Spring Boot (v4.1.1 / Java 17/22)</td>
+      <td style="border: none; padding: 4px 8px;"><strong>Database:</strong> PostgreSQL 18 (orderdb)</td>
+    </tr>
+    <tr style="background: transparent;">
+      <td style="border: none; padding: 4px 8px;"><strong>ORM & Persistence:</strong> Spring Data JPA + Hibernate</td>
+      <td style="border: none; padding: 4px 8px;"><strong>Connection Pool:</strong> HikariCP (Port 5432)</td>
+    </tr>
+  </table>
+</div>
+
+<h1>1. Executive Summary & 1-Minute Review Pitch</h1>
+<p>If an examiner or reviewer asks: <em>"Briefly explain your backend architecture and database connectivity"</em>, use this response:</p>
+
+<div class="callout">
+  <div class="callout-title">📌 1-MINUTE ELEVATOR PITCH FOR REVIEW:</div>
+  "Our application follows an enterprise multi-tier architecture. The <strong>React frontend</strong> dispatches RESTful JSON requests to our <strong>Spring Boot backend</strong>. Business operations are organized across Controllers, Services, and <strong>Spring Data JPA Repositories</strong>. We utilize <strong>Hibernate</strong> as our Object-Relational Mapping (ORM) framework to automatically synchronize Java entity classes with database tables. Connection pooling is managed by <strong>HikariCP</strong> for minimal connection latency, connecting directly to our permanent <strong>PostgreSQL relational database</strong> (database: <code>orderdb</code> on port 5432). In addition, our Product entity implements automated reverse-tax GST calculations using JPA lifecycle callbacks (<code>@PrePersist</code> and <code>@PreUpdate</code>) right before persistence."
+</div>
+
+<h1>2. Complete Architecture & Data Flow</h1>
+<p>The diagram below outlines how client requests travel through the system down to PostgreSQL:</p>
+
+<pre>
++-----------------------------------------------------------------------------------+
+|  1. PRESENTATION LAYER: React Frontend (Vite / Axios / Fetch)                     |
+|     - Interacts with Admin, Employee, or Authentication screens                   |
+|     - Sends HTTP Requests (GET, POST, PUT, DELETE) with JSON payload              |
++-----------------------------------------+-----------------------------------------+
+                                          | REST API (Port 8080)
+                                          v
++-----------------------------------------------------------------------------------+
+|  2. CONTROLLER LAYER: Spring Boot REST Controllers                                |
+|     - ShopController, CityController, ProductController, UserController           |
+|     - Validates input, parses JSON, and returns ResponseEntity<?>                 |
++-----------------------------------------+-----------------------------------------+
+                                          | Method Calls
+                                          v
++-----------------------------------------------------------------------------------+
+|  3. PERSISTENCE LAYER: Spring Data JPA Repositories                               |
+|     - Extends JpaRepository<Entity, Long> (CRUD, pagination, derived queries)     |
+|     - Eliminates boilerplate JDBC code and manual PreparedStatement wiring        |
++-----------------------------------------+-----------------------------------------+
+                                          | Object-Relational Mapping (ORM)
+                                          v
++-----------------------------------------------------------------------------------+
+|  4. ORM & LIFECYCLE ENGINE: Hibernate ORM                                         |
+|     - Maps @Entity classes (User, Product, Shop, City) to SQL relational tables   |
+|     - Triggers @PrePersist and @PreUpdate lifecycle hooks                         |
+|     - Generates PostgreSQL-optimized SQL statements                               |
++-----------------------------------------+-----------------------------------------+
+                                          | SQL Statements
+                                          v
++-----------------------------------------------------------------------------------+
+|  5. CONNECTION POOLING & DRIVER: HikariCP + PostgreSQL JDBC Driver                |
+|     - Maintains a pre-allocated pool of persistent TCP connections                |
+|     - Handles concurrent connections efficiently with zero handshake lag          |
++-----------------------------------------+-----------------------------------------+
+                                          | TCP Connection (Port 5432)
+                                          v
++-----------------------------------------------------------------------------------+
+|  6. DATABASE STORAGE: PostgreSQL 18 Engine                                        |
+|     - Database: 'orderdb'                                                         |
+|     - Tables: 'cities', 'products', 'shops', 'users'                              |
+|     - ACID Compliant: Guaranteed persistence on disk                              |
++-----------------------------------------------------------------------------------+
+</pre>
+
+<h1>3. Database Configuration Details (application.properties)</h1>
+<p>The connection settings are configured in <code>backend/src/main/resources/application.properties</code>:</p>
+
+<pre>
+server.port=8080
+
+# PostgreSQL Database Configuration
+spring.datasource.url=jdbc:postgresql://localhost:5432/orderdb
+spring.datasource.username=postgres
+spring.datasource.password=postgres
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+# JPA & Hibernate Settings
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+</pre>
+
+<table>
+  <thead>
+    <tr>
+      <th>Property Key</th>
+      <th>Technical Purpose & Impact</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>spring.datasource.url</strong></td>
+      <td>Specifies the JDBC Connection URL: protocol (<code>jdbc</code>), vendor (<code>postgresql</code>), machine (<code>localhost</code>), port (<code>5432</code>), and database name (<code>orderdb</code>).</td>
+    </tr>
+    <tr>
+      <td><strong>spring.datasource.username</strong></td>
+      <td>The database user with administrative privileges on <code>orderdb</code> (default: <code>postgres</code>).</td>
+    </tr>
+    <tr>
+      <td><strong>spring.datasource.password</strong></td>
+      <td>Password authenticating access to PostgreSQL. Configured as <code>postgres</code>.</td>
+    </tr>
+    <tr>
+      <td><strong>spring.datasource.driver-class-name</strong></td>
+      <td>Explicitly loads <code>org.postgresql.Driver</code> to communicate via PostgreSQL's native wire protocol.</td>
+    </tr>
+    <tr>
+      <td><strong>spring.jpa.hibernate.ddl-auto=update</strong></td>
+      <td>Schema synchronization strategy: Automatically creates tables and updates new columns without dropping or losing existing data.</td>
+    </tr>
+    <tr>
+      <td><strong>spring.jpa.show-sql & format_sql</strong></td>
+      <td>Prints all Hibernate-generated SQL queries to the terminal in clean indentation for debugging.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h1>4. Database Schema & Relational Entities</h1>
+<p>The application defines 4 relational entities in the <code>com.wholesale.orderapp.entity</code> package:</p>
+
+<h2>1. User Entity (Table: <code>users</code>)</h2>
+<p>Manages authentication, identity, and system authorization:</p>
+<ul>
+  <li><code>id</code>: Primary Key (BIGINT, Auto-generated Identity)</li>
+  <li><code>name</code>: User full name</li>
+  <li><code>email</code>: Unique constraint (<code>unique = true</code>, Non-null)</li>
+  <li><code>password</code>: Hashed/stored user credentials</li>
+  <li><code>role</code>: Access role (<code>"admin"</code> or <code>"employee"</code>)</li>
+</ul>
+
+<h2>2. City Entity (Table: <code>cities</code>)</h2>
+<p>Stores distribution territory names:</p>
+<ul>
+  <li><code>id</code>: Primary Key (BIGINT, Auto-generated Identity)</li>
+  <li><code>name</code>: City name (Non-null)</li>
+</ul>
+
+<h2>3. Shop Entity (Table: <code>shops</code>)</h2>
+<p>Represents retail wholesale customers:</p>
+<ul>
+  <li><code>id</code>: Primary Key (BIGINT, Auto-generated Identity)</li>
+  <li><code>name</code>: Shop name (Non-null)</li>
+  <li><code>address</code>, <code>owner</code>, <code>contact</code>: Contact details</li>
+  <li><code>city_id</code>: <strong>Foreign Key</strong> referencing <code>cities.id</code> mapped via <code>@ManyToOne</code> and <code>@JoinColumn(name = "city_id", nullable = false)</code></li>
+</ul>
+
+<h2>4. Product Entity (Table: <code>products</code>)</h2>
+<p>Stores the inventory catalogue and tax-inclusive pricing:</p>
+<ul>
+  <li><code>id</code>: Primary Key (BIGINT, Auto-generated Identity)</li>
+  <li><code>name</code>: Product Name, <code>hsnCode</code>: HSN Classification Code</li>
+  <li><code>netRate</code>: Net Rate inclusive of GST</li>
+  <li><code>taxGst</code>: Total GST percentage (e.g., 5%, 12%, 18%)</li>
+  <li>Computed Columns: <code>rate</code> (Base Price), <code>taxAmount</code>, <code>cgstPercent</code>, <code>sgstPercent</code>, <code>cgstAmount</code>, <code>sgstAmount</code></li>
+</ul>
+
+<div class="callout">
+  <div class="callout-title">📌 RELATIONAL INTEGRITY HIGHLIGHT:</div>
+  The relationship between <code>Shop</code> and <code>City</code> uses JPA's <code>@ManyToOne</code>. Hibernate automatically enforces an <code>ALTER TABLE shops ADD CONSTRAINT ... FOREIGN KEY (city_id) REFERENCES cities</code> constraint in PostgreSQL.
+</div>
+
+<h1>5. Special Feature: Automated Reverse GST Tax Calculation</h1>
+<p>In wholesale billing, items are frequently quoted at a final Net Rate (inclusive of tax). The Product entity encapsulates the official reverse GST calculation formula:</p>
+
+<pre>
+@PrePersist
+@PreUpdate
+public void calculateTaxFields() {
+    if (taxGst == null) taxGst = 0.0;
+    if (netRate == null) netRate = 0.0;
+
+    // Reverse Tax formula (Invoice GST standard):
+    // Base Rate = Net Rate / (1 + GST%)
+    double divisor = 1.0 + (taxGst / 100.0);
+    double calculatedRate = divisor > 0 ? (netRate / divisor) : netRate;
+    this.rate = Math.round(calculatedRate * 100.0) / 100.0;
+
+    double calculatedTax = netRate - this.rate;
+    this.taxAmount = Math.round(calculatedTax * 100.0) / 100.0;
+
+    this.cgstPercent = Math.round((taxGst / 2.0) * 100.0) / 100.0;
+    this.sgstPercent = Math.round((taxGst / 2.0) * 100.0) / 100.0;
+
+    double halfTax = this.taxAmount / 2.0;
+    this.cgstAmount = Math.round(halfTax * 100.0) / 100.0;
+    this.sgstAmount = Math.round((this.taxAmount - this.cgstAmount) * 100.0) / 100.0;
+}
+</pre>
+
+<p><strong>Why mention this in the review?</strong><br>
+It demonstrates defensive domain-driven design: instead of relying on the client/frontend JavaScript to calculate financial tax values (which could be altered or buggy), the business rules are executed automatically by JPA lifecycle hooks before data is written to disk.</p>
+
+<h1>6. PostgreSQL vs. Temporary (H2) Database</h1>
+<table>
+  <thead>
+    <tr>
+      <th>Comparison Criteria</th>
+      <th>H2 Database (Temporary)</th>
+      <th>PostgreSQL 18 (Permanent)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Storage Engine</strong></td>
+      <td>In-memory RAM</td>
+      <td>Permanent disk with WAL (Write-Ahead Logging)</td>
+    </tr>
+    <tr>
+      <td><strong>Data Persistence</strong></td>
+      <td>Lost every time server stops</td>
+      <td>Permanently retained across restarts</td>
+    </tr>
+    <tr>
+      <td><strong>Concurrency</strong></td>
+      <td>Single-process, light testing</td>
+      <td>Multi-threaded, high concurrent traffic</td>
+    </tr>
+    <tr>
+      <td><strong>Inspection Tools</strong></td>
+      <td>Embedded browser console</td>
+      <td>pgAdmin 4, psql CLI, enterprise BI tools</td>
+    </tr>
+    <tr>
+      <td><strong>Production Suitability</strong></td>
+      <td>Unit tests only</td>
+      <td>Enterprise production grade (ACID compliant)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h1>7. Viva & Review Questions with Model Answers</h1>
+
+<div class="qa-block">
+  <div class="qa-q">Q1: What is the difference between JPA and Hibernate?</div>
+  <div class="qa-a"><strong>Answer:</strong> JPA (Jakarta/Java Persistence API) is a specification/standard that defines how Java objects should be mapped to relational tables. Hibernate is the actual ORM library that implements the JPA specification.</div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">Q2: Why use HikariCP instead of opening direct JDBC connections?</div>
+  <div class="qa-a"><strong>Answer:</strong> Opening a TCP connection to PostgreSQL involves network handshakes and authentication checks, which takes time. HikariCP keeps a pool of ready-to-use connections in memory, allowing Spring Boot to execute queries with negligible overhead.</div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">Q3: What does 'spring.jpa.hibernate.ddl-auto=update' do?</div>
+  <div class="qa-a"><strong>Answer:</strong> It instructs Hibernate to automatically check existing database tables against JPA entity classes. Missing tables and new columns are automatically created without dropping existing records.</div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">Q4: How does Spring Data JPA work without SQL queries?</div>
+  <div class="qa-a"><strong>Answer:</strong> By extending <code>JpaRepository</code>, Spring generates proxy classes with standard CRUD methods (<code>save</code>, <code>findById</code>, <code>findAll</code>, <code>deleteById</code>) and derives custom query logic from method names (e.g., <code>findByEmail</code>) at startup.</div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">Q5: How does the backend communicate with the frontend?</div>
+  <div class="qa-a"><strong>Answer:</strong> Communication occurs over HTTP REST APIs on port 8080. The React client sends JSON requests, which Spring MVC controllers deserialize into Java objects, execute business logic, and serialize responses back as JSON.</div>
+</div>
+
+</body>
+</html>

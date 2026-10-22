@@ -4,6 +4,7 @@ export default function RegisterForm() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('employee');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -15,13 +16,14 @@ export default function RegisterForm() {
       const response = await fetch('http://localhost:8080/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password })
+        body: JSON.stringify({ name, email, password, role })
       });
       if (response.ok) {
         setSuccess('Registration successful! You can now log in.');
         setName('');
         setEmail('');
         setPassword('');
+        setRole('employee');
       } else {
         const errText = await response.text();
         setError(errText || 'Registration failed');
@@ -40,14 +42,39 @@ export default function RegisterForm() {
       <div className="form-group">
         <label htmlFor="name">Full Name</label>
         <div className="input-wrapper">
-          <input type="text" id="name" placeholder="John Doe" value={name} onChange={e => setName(e.target.value)} required />
+          <input type="text" id="name" placeholder="Your Name" value={name} onChange={e => setName(e.target.value)} required />
         </div>
       </div>
 
       <div className="form-group">
         <label htmlFor="email">Email Address</label>
         <div className="input-wrapper">
-          <input type="email" id="email" placeholder="john@example.com" value={email} onChange={e => setEmail(e.target.value)} required />
+          <input type="email" id="email" placeholder="name@gmail.com" value={email} onChange={e => setEmail(e.target.value)} required />
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="role">Account Role</label>
+        <div className="input-wrapper">
+          <select 
+            id="role" 
+            value={role} 
+            onChange={e => setRole(e.target.value)}
+            style={{ 
+              width: '100%', 
+              padding: '12px 14px', 
+              borderRadius: '8px', 
+              border: '1.5px solid #e2e8f0', 
+              background: '#f8fafc', 
+              color: '#1e293b', 
+              fontSize: '14px',
+              fontFamily: 'inherit',
+              cursor: 'pointer' 
+            }}
+          >
+            <option value="employee">Employee / Staff</option>
+            <option value="admin">Admin</option>
+          </select>
         </div>
       </div>
 

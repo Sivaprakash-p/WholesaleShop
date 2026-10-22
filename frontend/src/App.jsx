@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import LoginForm from './components/LoginForm';
 import RegisterForm from './components/RegisterForm';
-import SocialLogin from './components/SocialLogin';
 import AdminDashboard from './components/AdminDashboard';
 import EmployeeDashboard from './components/EmployeeDashboard';
 import './App.css';
@@ -65,8 +64,6 @@ function App() {
         <div key={animateKey}>
           {isLogin ? <LoginForm onLogin={handleLogin} /> : <RegisterForm />}
         </div>
-
-        <SocialLogin />
       </div>
     </>
   );

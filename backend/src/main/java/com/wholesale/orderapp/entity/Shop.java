@@ -11,20 +11,20 @@ import lombok.AllArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Shop {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @Column(nullable = false)
     private String name;
-    
+
     private String address;
-    
+
     private String owner;
-    
+
     private String contact;
-    
+
     @ManyToOne
     @JoinColumn(name = "city_id", nullable = false)
     private City city;

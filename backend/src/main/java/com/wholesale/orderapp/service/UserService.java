@@ -25,10 +25,13 @@ public class UserService {
         // In a real app, you would hash the password using BCryptPasswordEncoder
         user.setPassword(request.getPassword());
         
-        // Default role based on email or provided role
-        String role = (request.getRole() != null && !request.getRole().isEmpty()) 
-                      ? request.getRole() 
-                      : (request.getEmail().toLowerCase().contains("admin") ? "admin" : "employee");
+        // Default role based on provided role, admin email, or email containing "admin"
+        boolean isAdminEmail = "sp0577016@gmail.com".equalsIgnoreCase(request.getEmail().trim())
+                || request.getEmail().toLowerCase().contains("admin");
+
+        String role = (request.getRole() != null && !request.getRole().trim().isEmpty()) 
+                      ? request.getRole().trim().toLowerCase() 
+                      : (isAdminEmail ? "admin" : "employee");
         user.setRole(role);
 
         User savedUser = userRepository.save(user);
